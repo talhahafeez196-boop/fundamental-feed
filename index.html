@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fund. Feed">
+  <title>Fundamental Feed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #060606;
+      --bg2:      #0b0b0b;
+      --bg3:      #0e0e0e;
+      --border:   #181818;
+      --border2:  #222;
+      --text:     #ddd;
+      --muted:    #555;
+      --dim:      #2a2a2a;
+      --bull:     #22c55e;
+      --bear:     #ef4444;
+      --neut:     #f59e0b;
+      --bull-bg:  rgba(34,197,94,0.07);
+      --bear-bg:  rgba(239,68,68,0.07);
+      --neut-bg:  rgba(245,158,11,0.07);
+      --bull-bd:  rgba(34,197,94,0.2);
+      --bear-bd:  rgba(239,68,68,0.2);
+      --neut-bd:  rgba(245,158,11,0.2);
+      --gold:     #c0a030;
+      --gold-bg:  #0c0b00;
+      --gold-bd:  #1e1900;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--bg);
+      border-bottom: 1px solid #101010;
+      padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .header-left h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 800;
+      color: #fff; letter-spacing: 0.5px;
+    }
+    .header-left .sub {
+      font-family: 'DM Mono'; font-size: 8px;
+      color: var(--dim); letter-spacing: 1.5px; margin-top: 2px;
+    }
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      color: var(--muted);
+      padding: 7px 14px;
+      font-family: 'DM Mono'; font-size: 10px;
+      cursor: pointer; letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { border-color: #444; color: #aaa; }
+    .refresh-btn.loading { opacity: 0.5; cursor: not-allowed; }
+    .spin { animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MAIN ───────────────────────────────────────────── */
+    main { max-width: 720px; margin: 0 auto; padding: 18px 16px 40px; }
+
+    /* ── MACRO BACKDROP ─────────────────────────────────── */
+    .macro-box {
+      background: var(--bg2); border: 1px solid #141414;
+      border-radius: 7px; padding: 14px 16px; margin-bottom: 14px;
+      animation: fadeUp 0.3s ease both;
+    }
+    .box-label {
+      font-family: 'DM Mono'; font-size: 8px;
+      color: var(--dim); letter-spacing: 1.5px; margin-bottom: 7px;
+    }
+    .macro-text { font-size: 12px; color: var(--muted); line-height: 1.9; }
+
+    /* ── WATCHLIST ──────────────────────────────────────── */
+    .watchlist {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      align-items: center; margin-bottom: 18px;
+    }
+    .watch-label {
+      font-family: 'DM Mono'; font-size: 8px;
+      color: var(--dim); letter-spacing: 1px;
+    }
+    .watch-tag {
+      font-family: 'DM Mono'; font-size: 9px;
+      color: var(--gold); background: var(--gold-bg);
+      border: 1px solid var(--gold-bd);
+      border-radius: 3px; padding: 2px 8px;
+    }
+
+    /* ── TIMESTAMP ──────────────────────────────────────── */
+    .timestamp {
+      font-family: 'DM Mono'; font-size: 9px;
+      color: var(--dim); text-align: right;
+      margin-bottom: 14px;
+    }
+
+    /* ── ASSET CARDS ────────────────────────────────────── */
+    .cards { display: flex; flex-direction: column; gap: 8px; }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+      animation: fadeUp 0.4s ease both;
+    }
+    .card.open { border-color: var(--card-bd); }
+
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 16px; cursor: pointer;
+      border-left: 3px solid var(--card-color);
+    }
+    .card-header:active { background: rgba(255,255,255,0.02); }
+
+    .card-left { display: flex; align-items: center; gap: 12px; }
+    .card-icon {
+      width: 38px; height: 38px; border-radius: 7px;
+      background: #111; border: 1px solid #1e1e1e;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Mono'; font-size: 10px; font-weight: 800;
+      color: #444; letter-spacing: -0.5px; flex-shrink: 0;
+    }
+    .card-symbol {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 800; color: #eee;
+    }
+    .card-summary {
+      font-size: 11px; color: var(--muted);
+      margin-top: 3px; line-height: 1.5;
+      max-width: 260px;
+    }
+
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .bias-pill {
+      display: flex; align-items: center; gap: 5px;
+      border-radius: 4px; padding: 4px 11px;
+      border: 1px solid var(--card-bd);
+      background: var(--card-bg);
+    }
+    .bias-arrow { font-size: 9px; color: var(--card-color); }
+    .bias-text {
+      font-family: 'DM Mono'; font-size: 11px; font-weight: 800;
+      color: var(--card-color); letter-spacing: 1.5px;
+    }
+    .conviction-bar { display: flex; gap: 3px; align-items: center; }
+    .pip {
+      width: 14px; height: 3px; border-radius: 2px;
+      transition: background 0.3s;
+    }
+    .conv-label {
+      font-family: 'DM Mono'; font-size: 8px;
+      color: #444; margin-left: 4px; letter-spacing: 0.5px;
+    }
+    .chevron { font-size: 10px; color: #252525; margin-left: 8px; }
+
+    /* ── EXPANDED BODY ──────────────────────────────────── */
+    .card-body {
+      padding: 0 16px 16px;
+      border-top: 1px solid #111;
+      display: none; flex-direction: column; gap: 8px;
+    }
+    .card.open .card-body { display: flex; }
+
+    .reason-block {
+      padding: 11px 13px; border-radius: 5px; margin-top: 8px;
+      animation: fadeUp 0.25s ease both;
+    }
+    .reason-block.driver {
+      background: #0a0e0a;
+      border: 1px solid #142014;
+      border-left: 2px solid #14532d;
+    }
+    .reason-block.risk {
+      background: #0e0a0a;
+      border: 1px solid #201414;
+      border-left: 2px solid #7f1d1d;
+    }
+    .reason-label {
+      font-size: 10px; font-weight: 600; margin-bottom: 5px;
+      letter-spacing: 0.3px;
+    }
+    .driver .reason-label { color: rgba(34,197,94,0.7); }
+    .risk .reason-label   { color: rgba(239,68,68,0.7); }
+    .reason-detail { font-size: 11.5px; color: #5a5a5a; line-height: 1.85; }
+
+    .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .meta-box {
+      background: var(--bg3); border: 1px solid #1a1a1a;
+      border-radius: 6px; padding: 10px 12px;
+    }
+    .meta-label {
+      font-family: 'DM Mono'; font-size: 8px;
+      color: #333; letter-spacing: 1.5px; margin-bottom: 4px;
+    }
+    .meta-val { font-size: 11px; color: #888; line-height: 1.6; }
+    .cot-val { font-family: 'DM Mono'; font-size: 13px; font-weight: 700; }
+
+    .key-event {
+      background: var(--gold-bg); border: 1px solid var(--gold-bd);
+      border-radius: 6px; padding: 10px 12px;
+      display: flex; gap: 8px; align-items: flex-start; margin-top: 0;
+    }
+    .event-icon { color: var(--gold); font-size: 12px; margin-top: 1px; flex-shrink: 0; }
+    .event-label {
+      font-family: 'DM Mono'; font-size: 8px;
+      color: #4a4000; letter-spacing: 1.5px; margin-bottom: 3px;
+    }
+    .event-val { font-size: 11px; color: var(--gold); }
+
+    /* ── EMPTY / ERROR / LOADING STATES ─────────────────── */
+    .state-box {
+      text-align: center; padding: 60px 20px;
+      color: var(--dim); animation: fadeUp 0.3s ease both;
+    }
+    .state-icon { font-size: 32px; margin-bottom: 14px; }
+    .state-title { font-family: 'Syne'; font-size: 14px; color: #333; margin-bottom: 6px; }
+    .state-sub { font-size: 11px; color: var(--dim); }
+    .error-box {
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.15);
+      border-radius: 7px; padding: 14px 16px;
+      color: #ef4444; font-size: 11px;
+      font-family: 'DM Mono'; line-height: 1.7;
+      word-break: break-all; margin-bottom: 14px;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .footer {
+      text-align: center; margin-top: 28px;
+      font-family: 'DM Mono'; font-size: 8px;
+      color: #141414; letter-spacing: 1px; line-height: 2;
+    }
+
+    /* ── ANIMATIONS ─────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SCROLLBAR ──────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>FUNDAMENTAL FEED</h1>
+    <div class="sub">EUR/USD · GBP/USD · USD/CAD · GOLD</div>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+    <span id="refreshIcon">↻</span> REFRESH
+  </button>
+</header>
+
+<main>
+  <div id="timestamp" class="timestamp" style="display:none"></div>
+  <div id="errorBox" class="error-box" style="display:none"></div>
+  <div id="macroBox" class="macro-box" style="display:none">
+    <div class="box-label">MACRO BACKDROP</div>
+    <div class="macro-text" id="macroText"></div>
+  </div>
+  <div id="watchlistBox" class="watchlist" style="display:none"></div>
+  <div id="cards" class="cards"></div>
+  <div id="stateBox" class="state-box">
+    <div class="state-icon">◈</div>
+    <div class="state-title">Loading feed...</div>
+    <div class="state-sub">Fetching latest fundamental data</div>
+  </div>
+  <div class="footer">
+    FUNDAMENTAL CONTEXT ONLY · NOT A TRADE SIGNAL · MANAGE YOUR OWN RISK<br>
+    Refreshes automatically every 4 hours via background bot
+  </div>
+</main>
+
+<script>
+  // ── REPLACE THIS WITH YOUR GITHUB USERNAME AND REPO ─────────────────────
+  const GITHUB_USER = "YOUR_GITHUB_USERNAME";
+  const GITHUB_REPO = "fundamental-feed";
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/data.json`;
+
+  const BIAS = {
+    BULLISH: { color: "#22c55e", bg: "rgba(34,197,94,0.07)", border: "rgba(34,197,94,0.2)", arrow: "▲" },
+    BEARISH: { color: "#ef4444", bg: "rgba(239,68,68,0.07)", border: "rgba(239,68,68,0.2)", arrow: "▼" },
+    NEUTRAL: { color: "#f59e0b", bg: "rgba(245,158,11,0.07)", border: "rgba(245,158,11,0.2)", arrow: "◆" },
+  };
+  const COT_COLOR = { LONG: "#22c55e", SHORT: "#ef4444", MIXED: "#f59e0b", UNKNOWN: "#444" };
+  const CONV_COLOR = { HIGH: "#22c55e", MEDIUM: "#f59e0b", LOW: "#666" };
+  const ICONS = { "EUR/USD": "€/$", "GBP/USD": "£/$", "USD/CAD": "$/C$", "XAU/USD": "Au" };
+
+  function setLoading(on) {
+    const btn = document.getElementById("refreshBtn");
+    const icon = document.getElementById("refreshIcon");
+    btn.classList.toggle("loading", on);
+    btn.disabled = on;
+    icon.textContent = on ? "⟳" : "↻";
+    icon.classList.toggle("spin", on);
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("errorBox");
+    el.textContent = "⚠ " + msg;
+    el.style.display = "block";
+  }
+
+  function hideError() {
+    document.getElementById("errorBox").style.display = "none";
+  }
+
+  function convPips(level) {
+    const filled = level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : 1;
+    const color = CONV_COLOR[level] || "#666";
+    let html = `<div class="conviction-bar">`;
+    for (let i = 1; i <= 3; i++) {
+      html += `<div class="pip" style="background:${i <= filled ? color : "#1c1c1c"}"></div>`;
+    }
+    html += `<span class="conv-label">${level}</span></div>`;
+    return html;
+  }
+
+  function buildCard(asset, index) {
+    const cfg = BIAS[asset.bias] || BIAS.NEUTRAL;
+    const icon = ICONS[asset.symbol] || asset.symbol.slice(0,2);
+    const cotColor = COT_COLOR[asset.cot_lean] || "#444";
+
+    const drivers = (asset.drivers || []).map((d, i) => `
+      <div class="reason-block driver" style="animation-delay:${i*50}ms">
+        <div class="reason-label">◈ ${d.label}</div>
+        <div class="reason-detail">${d.detail}</div>
+      </div>`).join("");
+
+    const risks = (asset.risks || []).map((r, i) => `
+      <div class="reason-block risk" style="animation-delay:${(asset.drivers?.length||0)*50 + i*50}ms">
+        <div class="reason-label">⚠ ${r.label}</div>
+        <div class="reason-detail">${r.detail}</div>
+      </div>`).join("");
+
+    return `
+    <div class="card" id="card-${index}" style="--card-color:${cfg.color};--card-bg:${cfg.bg};--card-bd:${cfg.border};animation-delay:${index*80}ms">
+      <div class="card-header" onclick="toggleCard(${index})">
+        <div class="card-left">
+          <div class="card-icon">${icon}</div>
+          <div>
+            <div class="card-symbol">${asset.symbol}</div>
+            <div class="card-summary">${asset.summary || ""}</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="bias-pill">
+            <span class="bias-arrow">${cfg.arrow}</span>
+            <span class="bias-text">${asset.bias}</span>
+          </div>
+          ${convPips(asset.conviction)}
+        </div>
+        <span class="chevron" id="chev-${index}">▼</span>
+      </div>
+      <div class="card-body">
+        ${drivers}
+        ${risks}
+        <div class="meta-row">
+          <div class="meta-box">
+            <div class="meta-label">CB DIVERGENCE</div>
+            <div class="meta-val">${asset.cb_divergence || "—"}</div>
+          </div>
+          <div class="meta-box">
+            <div class="meta-label">COT LEAN</div>
+            <div class="cot-val" style="color:${cotColor}">${asset.cot_lean || "UNKNOWN"}</div>
+          </div>
+        </div>
+        ${asset.key_event ? `
+        <div class="key-event">
+          <span class="event-icon">⚑</span>
+          <div>
+            <div class="event-label">WATCH THIS WEEK</div>
+            <div class="event-val">${asset.key_event}</div>
+          </div>
+        </div>` : ""}
+      </div>
+    </div>`;
+  }
+
+  function toggleCard(index) {
+    const card = document.getElementById(`card-${index}`);
+    const chev = document.getElementById(`chev-${index}`);
+    const isOpen = card.classList.contains("open");
+    card.classList.toggle("open", !isOpen);
+    chev.textContent = isOpen ? "▼" : "▲";
+  }
+
+  async function loadData() {
+    if (document.getElementById("refreshBtn").disabled) return;
+    setLoading(true);
+    hideError();
+
+    try {
+      // Cache-bust so we always get fresh data
+      const url = `${DATA_URL}?t=${Date.now()}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error("data.json not found. Make sure the bot has run at least once and pushed data to your GitHub repo.");
+        }
+        throw new Error(`GitHub fetch failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Timestamp
+      const tsEl = document.getElementById("timestamp");
+      tsEl.textContent = `Last updated: ${data.updated || data.fetched_at || "unknown"}`;
+      tsEl.style.display = "block";
+
+      // Macro
+      if (data.macro) {
+        document.getElementById("macroText").textContent = data.macro;
+        document.getElementById("macroBox").style.display = "block";
+      }
+
+      // Watchlist
+      if (data.watch?.length) {
+        const wl = document.getElementById("watchlistBox");
+        wl.innerHTML = `<span class="watch-label">ON WATCH</span>` +
+          data.watch.map(e => `<span class="watch-tag">⚑ ${e}</span>`).join("");
+        wl.style.display = "flex";
+      }
+
+      // Cards
+      const cardsEl = document.getElementById("cards");
+      cardsEl.innerHTML = (data.assets || []).map((a, i) => buildCard(a, i)).join("");
+
+      // Hide state box
+      document.getElementById("stateBox").style.display = "none";
+
+    } catch (err) {
+      showError(err.message);
+      document.getElementById("stateBox").style.display = "none";
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Load on page open
+  loadData();
+</script>
+</body>
+</html>
